@@ -145,6 +145,19 @@ app.post('/tenants/:slug/upgrade', authenticateJWT, async (req, res) => {
   }
 });
 
+// ...previous code...
+
+// List all users for tenant (for note details)
+app.get('/users', authenticateJWT, async (req, res) => {
+  try {
+    const { tenantId } = req.user;
+    const users = await pool.query('SELECT id, email, role, tenant_id FROM users WHERE tenant_id = $1', [tenantId]);
+    res.json(users.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`API running on port ${PORT}`);

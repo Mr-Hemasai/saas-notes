@@ -15,12 +15,28 @@ export default function Home() {
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [pinnedNotes, setPinnedNotes] = useState([]);
+  const [viewNote, setViewNote] = useState(null);
+  const [usersById, setUsersById] = useState({});
+
+  async function fetchUsers(token) {
+    try {
+      const res = await axios.get('/api/users', { headers: { Authorization: `Bearer ${token}` } });
+      // Map users by id for quick lookup
+      const map = {};
+      res.data.forEach(u => { map[u.id] = u; });
+      setUsersById(map);
+    } catch (err) {
+      // fallback: just show userId if fetch fails
+      setUsersById({});
+    }
+  }
 
   useEffect(() => {
     if (token) {
       const payload = JSON.parse(atob(token.split('.')[1]));
       setUser(payload);
       fetchNotes(token);
+      fetchUsers(token);
     }
   }, [token]);
 
@@ -152,6 +168,9 @@ export default function Home() {
                   <button title="Edit" style={{background:'none',boxShadow:'none',color:'#6366f1',fontSize:'1.2em',padding:'0 7px',border:'none',cursor:'pointer'}} onClick={() => handleEdit(n)}>
                     ✏️
                   </button>
+                  <button title="View" style={{background:'none',boxShadow:'none',color:'#6366f1',fontSize:'1.2em',padding:'0 7px',border:'none',cursor:'pointer'}} onClick={() => setViewNote(n)}>
+                    👁️
+                  </button>
                 </div>
               </div>
               <div className="note-content">{n.content}</div>
@@ -187,6 +206,28 @@ export default function Home() {
               <button type="submit" style={{width:'100%'}}>{editNoteId ? 'Save Changes' : 'Create'}</button>
             </form>
             <button onClick={() => { setShowModal(false); setEditNoteId(null); }} style={{marginTop:8,width:'100%'}}>Cancel</button>
+          </div>
+        </div>
+      )}
+      {/* Modal for viewing note details */}
+      {viewNote && (
+        <div className="modal-bg" onClick={() => setViewNote(null)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <h3 style={{marginBottom:12,display:'flex',alignItems:'center',gap:8}}>
+              <span style={{fontSize:'1.3em'}}>👁️</span> {viewNote.title}
+            </h3>
+            <div style={{color:'#64748b',fontSize:'1.09rem',marginBottom:18}}>
+              {viewNote.content.split('\n').map((line, idx) => (
+                <span key={idx}>
+                  {line}
+                  <br />
+                </span>
+              ))}
+            </div>
+            <div style={{fontSize:14,color:'#6366f1',marginBottom:8}}>
+              <b>Added by:</b> {usersById[viewNote.user_id]?.email || `User #${viewNote.user_id}`}
+            </div>
+            <button onClick={() => setViewNote(null)} style={{width:'100%',marginTop:8}}>Close</button>
           </div>
         </div>
       )}
